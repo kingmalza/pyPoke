@@ -1,39 +1,44 @@
 import io
-import requests
+import re
+#import requests
 import urllib
-from fake_useragent import UserAgent
+from urllib.request import urlopen
+#from fake_useragent import UserAgent
 import stem.process
 from stem.util import term
+from bs4 import BeautifulSoup
 
 class texc(Exception): pass
+
 class Wconnector:
 	
-	SOCKS_PORT = 7000
+	
 	tor_process = None
 	
 	def __init__(self,*lurl):
 		self.lurl = lurl
+		self.data = []
 
-	def fakereq(self):
-		#ua = UserAgent()
-		headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
-    
-		proxies = {
-			"http": "localhost",
-			"https": "localhost",
-		}    
-    
-		response = requests.get(url, headers=headers, proxies=proxies)
-		return response.content
+	def fakereq(self,url):
+		
+
+		#return response.content
+		html_page = urlopen(url)
+		soup = BeautifulSoup(html_page, "lxml")
+		self.data = list(alink.get('href') for alink in soup.findAll('a') if alink.get('href') is not "#" or alink.get('href') is not "/")
+		#for link in soup.findAll('a'):
+		#	linklist.append(link.get('href'))
+			
+			
     
 
 	def query(self, startT = False):
 		"""
 		Uses pycurl to fetch a site using the proxy on the SOCKS_PORT.
 		"""
-		if startT == True and type(self).tor_process not is None:
+		if startT == True:
 			try:
-				starTor()
+				type(self).starTor()
 			except Exception as texcept:
 				print("Exception in tor start %s" % str(texcept.args))
 		
@@ -44,8 +49,7 @@ class Wconnector:
 			print("Url lists cannot be blank")
 		else:
 			for x in self.lurl:
-				#then call fakereq
-				print (x)
+				self.fakereq(x)
 		
 
 	# Start an instance of Tor configured to only exit through Russia. This prints
@@ -59,6 +63,7 @@ class Wconnector:
 
 	@classmethod
 	def starTor(cls):
+		SOCKS_PORT = 7000
 		print(term.format("Starting Tor:\n", term.Attr.BOLD))
 	
 
@@ -67,7 +72,7 @@ class Wconnector:
 			'SocksPort': str(SOCKS_PORT),
 			#'ExitNodes': '{ru}',
 			},
-		init_msg_handler = print_bootstrap_lines,
+		init_msg_handler = cls.print_bootstrap_lines,
 		)
 	
 	@classmethod
@@ -78,8 +83,9 @@ class Wconnector:
 
 
 		
-if __name__ == '___main__':
+if __name__ == '__main__':
 
+	print('ciao')
 	w = Wconnector('http://www.sloop1.com/about-neuromarketing-company/','http://www.patriziameo.it')
 	t = Wconnector('http://www.sloop1.com/')
 	c = Wconnector()
@@ -87,9 +93,11 @@ if __name__ == '___main__':
 	try:
     
 		print(term.format("\nChecking our endpoint:\n", term.Attr.BOLD))
-		w.query()
+		w.query(startT = True)
 		t.query()
 		c.query()
+		
+		print("w.data is %s" % w.data)
     #print(fakereq(r"http://www.sloop1.com/about-neuromarketing-company/"))
 	finally:
 		type(w).stopTor()  # stops tor for instance class
