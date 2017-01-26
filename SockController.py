@@ -22,14 +22,14 @@ class texc(Exception): pass
 class Wconnector:
 	
 	tor_process = False
-	lbrowser = ['open -a /Applications/Google\ Chrome.app %s','open -a /Applications\ Firefox.app %s']
+	lbrowser = ['open -a /Applications\ Firefox.app %s','safari',r'open -a /Applications/Google\ Chrome.app %s']
 	
 	def __init__(self,lurl):
 		self.lurl = lurl
 		self.data = []
 		self.cicle = 0
-		self.maxcicle = random.randint(1,6)
-		self.browser = None
+		self.maxcicle = random.randint(1,10)
+		self.browser = ''
 	
 	
 	def fakereq(self,url):
@@ -40,11 +40,14 @@ class Wconnector:
 		self.data = list(alink.get('href') for alink in soup.findAll('a') if alink.get('href') is not "#")
 		if len(self.data) > 0:
 			#check for a random url and verify if is in domain
-			saddr = self.data[random.randint(1,len(self.data)-1)]
+			saddr = self.data[random.randint(0,len(self.data)-1)]
+			if saddr[:1] == r'/': saddr = self.lurl[:-1]+saddr
 			parsed_uri = urlparse(saddr)
 			domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+			
 			print(term.format("The domain is %s" % (domain), term.Attr.BOLD))
 			if domain == self.lurl:
+				
 				self.gestbrowser(saddr)
 			else:
 				self.fakereq(url)
@@ -56,18 +59,19 @@ class Wconnector:
 		print("Now we process %s for time %s (Cycle: %s -> %s)" % (l1,timeop,self.cicle,self.maxcicle))
 
 		try:
-			webbrowser.get(self.browser).open(l1)	
+			webbrowser.get('safari').open(l1)	
 			time.sleep(timeop)
 			
 			#reip variable for reget new ip address from tor controller after some page visited
 			self.cicle += 1
-			if self.cicle >= self.maxcicle:
+			if int(self.cicle) >= int(self.maxcicle):
+				self.cicle = 0
+				self.maxcicle = random.randint(1,10)
+				self.changebro()				
 				with Controller.from_port(port = 9051) as controller:
 					controller.authenticate()
 					controller.signal(Signal.NEWNYM)
-				self.cicle = 0
-				self.maxcicle = random.randint(1,10)
-				self.changebro()
+				
 				
 			self.fakereq(l1)
 		except Exception as ex1:
@@ -94,7 +98,7 @@ class Wconnector:
 	
 	
 	def changebro(self):
-		bro = self.browser[random.randint(1,len(type(self).lbrowser)-1)]
+		bro = type(self).lbrowser[random.randint(1,len(type(self).lbrowser)-1)]
 		setattr(self,'browser',bro)
 
 		
@@ -109,13 +113,15 @@ class Wconnector:
 			
 	@classmethod
 	def starTor(cls):
-		SOCKS_PORT = 7000
+		SOCKS_PORT = 9050
+		CONT_PORT = 9051
 		print(term.format("Starting Tor:\n", term.Attr.BOLD))
 	
 
 		cls.tor_process = stem.process.launch_tor_with_config(
 		config = {
 			'SocksPort': str(SOCKS_PORT),
+		        'ControlPort': str(CONT_PORT),
 			#'ExitNodes': '{ru}',
 			},
 		init_msg_handler = cls.print_bootstrap_lines,
@@ -133,17 +139,18 @@ class Wconnector:
 if __name__ == '__main__':
 
 	Wconnector.tor_process = True
-	w = Wconnector('http://www.sloop1.com/')
-	t = Wconnector('http://www.patriziameo.it/')
+	#w = Wconnector('http://www.sloop1.com/')
+	t = Wconnector('https://shop.otticamazzoleni.com/')
 	#c = Wconnector()
 	
 	try:
     
 		print(term.format("\nChecking our endpoint:\n", term.Attr.BOLD))
-		w.query()
+		#w.query()
 		t.query()
 		#c.query()
 		
+		
 		#print(fakereq(r"http://www.sloop1.com/about-neuromarketing-company/"))
 	finally:
-		type(w).stopTor()  # stops tor for instance class
+		type(t).stopTor()  # stops tor for instance class
