@@ -67,10 +67,14 @@ class Wconnector:
 			if int(self.cicle) >= int(self.maxcicle):
 				self.cicle = 0
 				self.maxcicle = random.randint(1,10)
-				self.changebro()				
-				with Controller.from_port(port = 9051) as controller:
-					controller.authenticate()
-					controller.signal(Signal.NEWNYM)
+				self.changebro()
+				#Restart Tor Process
+				type(self).stopTor()
+				type(self).starTor()
+				
+				#with Controller.from_port(port = 9051) as controller:
+				#	controller.authenticate()
+				#	controller.signal(Signal.NEWNYM)
 				
 				
 			self.fakereq(l1)
@@ -121,7 +125,7 @@ class Wconnector:
 		cls.tor_process = stem.process.launch_tor_with_config(
 		config = {
 			'SocksPort': str(SOCKS_PORT),
-		        'ControlPort': str(CONT_PORT),
+		    'ControlPort': str(CONT_PORT),
 			#'ExitNodes': '{ru}',
 			},
 		init_msg_handler = cls.print_bootstrap_lines,
